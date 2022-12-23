@@ -1,0 +1,57 @@
+reset;
+option solver cplex;
+option cplex_options 'timing=1 timelimit=60 mipdisplay=2 round=0 mipgap=5e-5';
+
+
+model 'EGIM_model.mod';
+
+### Data for 2019
+
+#data  'EGIM/EGIM_data_Ref.dat';
+
+### Data for analysis market with Russian gas
+
+data 'EGIM/EGIM_data_1.dat ';
+
+### Data for analysis market without Russian gas
+
+#data 'EGIM/EGIM_data_2.dat  ';
+
+## Model definitions 
+problem with_invensment: z,x,y,I,Ip,Im,d,ax, social_welfare,res,pro_cap,lng_cap1,lng_cap2,pipe_cap,pipe_cap2,one_inv,budget, sto1, sto2, sto3,sto4,sto5,sto6,sto7,eql1,eql2,trasnt,trasnt2,contract2 ; # without risk
+problem without_invensment: z,x,y,I,Ip,Im,d,ax, social_welfare,res,pro_cap,lng_cap1,lng_cap2,pipe_cap,pipe_cap2,one_inv,budget0, sto1, sto2, sto3,sto4,sto5,sto6,sto7,eql1,eql2,trasnt,trasnt2,contract2; # without risk
+
+
+#param cons_welfare{e in E, s in Z, t in 1..D};
+param risa{i in P,t in T};
+param risb{i in P,t in T};
+param ris{i in P,t in T};
+param price{ e in E,s in Z, t in 1..D};
+let weig:=1;
+solve with_invensment;
+
+
+
+#### POSTCALCULATION ###
+
+# HHI calculation
+
+for {t in T, i in P}
+{
+	let risa[i,t]:=sum{r in R,c in C,(i,j) in A[r] union Alt[r],dt in Dt[t]:(j in LCm[c] union LCs[c])}(x[i,j,r,dt]);
+	let risb[i,t]:=sum{r in R,c in C,(i,j) in A[r] union Alt[r],dt in Dt[t]:(j in LCm[c] union LCs[c])}(sum{(i,j,i,k)in Yset}y[i,j,i,k,dt]);
+	let ris[i,t]:=risa[i,t]+risb[i,t];
+}
+
+# Price Calculation
+
+for {t in 1..D, e in E, s in Z}
+{
+	let price[e,s,t]:= b[e,s,t]*d[e,s,t]+a[e,s,t]
+}
+
+
+#display price;
+#display d;
+#display ris;
+#display z;
